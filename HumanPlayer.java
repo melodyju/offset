@@ -16,6 +16,8 @@ import offset.sim.movePair;
  */
 public class HumanPlayer extends offset.sim.Player {
 
+    static final int SIZE = 32;
+
     private BufferedReader moveReader;
 
     /**
@@ -35,13 +37,13 @@ public class HumanPlayer extends offset.sim.Player {
      * Move should be in the format 'row col' where row and col are integers and 0-indexed.
      */
     public movePair move(Point[] grid, Pair pr, Pair pr0, ArrayList<ArrayList> history) {
-        System.out.println("Player " + id + ", please enter your next move.");
+        System.out.println("Player " + id + ", please enter your next move with (p, q) (" + pr.p + "," + pr.q + ")");
         String moveString;
 
-        movePair mp = null;
+        movePair mp = new movePair();
 
         try {
-            while (!validateMove(mp, pr)) {
+            do {
                 moveString = moveReader.readLine();
                 String[] moves = moveString.split(" ");
 
@@ -50,19 +52,28 @@ public class HumanPlayer extends offset.sim.Player {
                     int sy = Integer.parseInt(moves[1]);
                     int tx = Integer.parseInt(moves[2]);
                     int ty = Integer.parseInt(moves[3]);
+
+                    if (sx == -1 && sy == -1 && tx == -1 && ty == -1) {
+                        mp.move = false;
+                        System.out.println("nice pass!!!!");
+                        return mp;
+                    }
                    
-                    mp.src = grid[sx * 32 + sy];
-                    mp.target = grid[tx * 32 + ty];
+                    mp.src = grid[sx * SIZE + sy];
+                    mp.target = grid[tx * SIZE + ty];
                 }
                 catch (Exception e) {
-                    System.out.println("Format is <src row> <src col> <target row> <target col>, both integers!");
+                    e.printStackTrace();
+                    System.out.println("Format is <src row> <src col> <target row> <target col>, both integers! Enter -1 -1 -1 -1 to pass");
                     continue;
                 }
 
                 if (!validateMove(mp, pr)) {
                     System.out.println("That's not a valid move! Try again.");
+                } else {
+                    mp.move = true;
                 }
-            }
+            } while (!validateMove(mp, pr));
         }
         catch(IOException e) {
             e.printStackTrace();
