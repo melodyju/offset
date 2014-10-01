@@ -66,4 +66,25 @@ public class HumanPlayer extends offset.sim.Player {
         return mp;
     }
 
+    boolean validateMove(movePair movepr, Pair pr) {    
+        if (movepr == null || movepr.src == null || movepr.target == null) return false;
+        
+        Point src = movepr.src;
+        Point target = movepr.target;
+        boolean rightposition = false;
+
+        if (Math.abs(target.x-src.x)==Math.abs(pr.p) && Math.abs(target.y-src.y)==Math.abs(pr.q)) {
+            rightposition = true;
+        }
+        if (Math.abs(target.x-src.x)==Math.abs(pr.p) && Math.abs(target.y-src.y)==Math.abs(pr.q)) {
+            rightposition = true;
+        }
+        if (rightposition && src.value == target.value && src.value >0) {
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
 }

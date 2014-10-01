@@ -49,9 +49,12 @@ public class Player extends offset.sim.Player {
 					for (int j_pr=0; j_pr < size; j_pr++) {
 						movepr.src = grid[i * size + j];
 						movepr.target = grid[size*i_pr + j_pr];
+
 						if (validateMove(movepr, pr)) {
-							movepr.move = true;
-							return movepr;
+
+
+							// movepr.move = true;
+							// return movepr;
 						}
 					}
 				}
@@ -61,7 +64,56 @@ public class Player extends offset.sim.Player {
 		return movepr;
 	}
 
-	public boolean validateMove(movePair movepr, Pair pr) {
+	public int evaluateBoard(Point[] grid, Pair pr, Pair pr0) {
+		return (myPossibleMoves(grid, pr).length - yourPossibleMoves(grid, pr0).length);
+	}
+
+	private movePair[] myPossibleMoves(Point[] grid, Pair pr) {
+		ArrayList<movePair> moves = new ArrayList<movePair>();
+		movePair movepr = new movePair();
+
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				for (int i_pr=0; i_pr < size; i_pr++) {
+					for (int j_pr=0; j_pr < size; j_pr++) {
+						movepr.src = grid[i*size + j];
+						movepr.target = grid[size*i_pr + j_pr];
+						if (validateMove(movepr, pr)) {
+							moves.add(movepr);
+						}
+					}
+				}
+			}
+		}
+
+		movePair[] allMoves = moves.toArray(new movePair[moves.size()]);
+		return allMoves;
+
+	}
+
+	private movePair[] yourPossibleMoves(Point[] grid, Pair pr0) {
+		ArrayList<movePair> moves = new ArrayList<movePair>();
+		movePair movepr = new movePair();
+
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				for (int i_pr=0; i_pr < size; i_pr++) {
+					for (int j_pr=0; j_pr < size; j_pr++) {
+						movepr.src = grid[i*size + j];
+						movepr.target = grid[size*i_pr + j_pr];
+						if (validateMove(movepr, pr0)) {
+							moves.add(movepr);
+						}
+					}
+				}
+			}
+		}
+
+		movePair[] allMoves = moves.toArray(new movePair[moves.size()]);
+		return allMoves;
+	}
+
+	boolean validateMove(movePair movepr, Pair pr) {	
         if (movepr == null || movepr.src == null || movepr.target == null) return false;
 
     	Point src = movepr.src;
