@@ -31,10 +31,12 @@ public class Player extends offset.sim.Player {
 
 						movepr.src = grid[i*size + j];
 						movepr.target = grid[size*i_pr + j_pr];
-						
+
 						if (validateMove(movepr, pr)) {
-							movepr.move = true;
-							return movepr;
+
+
+							// movepr.move = true;
+							// return movepr;
 						}
 					}
 				}
@@ -45,11 +47,11 @@ public class Player extends offset.sim.Player {
 	}
 
 	public int evaluateBoard(Point[] grid, Pair pr, Pair pr0) {
-		return (numPossibleMovesForMe(grid, pr) - numPossibleMovesForOpponent(grid, pr0));
+		return (myPossibleMoves(grid, pr).length - yourPossibleMoves(grid, pr0).length);
 	}
 
-	private int numPossibleMovesForMe(Point[] grid, Pair pr) {
-		int moveCount = 0;
+	private movePair[] myPossibleMoves(Point[] grid, Pair pr) {
+		ArrayList<movePair> moves = new ArrayList<movePair>();
 		movePair movepr = new movePair();
 
 		for (int i = 0; i < size; i++) {
@@ -59,18 +61,20 @@ public class Player extends offset.sim.Player {
 						movepr.src = grid[i*size + j];
 						movepr.target = grid[size*i_pr + j_pr];
 						if (validateMove(movepr, pr)) {
-							moveCount++;
+							moves.add(movepr);
 						}
 					}
 				}
 			}
 		}
 
-		return moveCount;
+		movePair[] allMoves = moves.toArray(new movePair[moves.size()]);
+		return allMoves;
+
 	}
 
-	private int numPossibleMovesForOpponent(Point[] grid, Pair pr0) {
-		int moveCount = 0;
+	private movePair[] yourPossibleMoves(Point[] grid, Pair pr0) {
+		ArrayList<movePair> moves = new ArrayList<movePair>();
 		movePair movepr = new movePair();
 
 		for (int i = 0; i < size; i++) {
@@ -80,14 +84,15 @@ public class Player extends offset.sim.Player {
 						movepr.src = grid[i*size + j];
 						movepr.target = grid[size*i_pr + j_pr];
 						if (validateMove(movepr, pr0)) {
-							moveCount++;
+							moves.add(movepr);
 						}
 					}
 				}
 			}
 		}
 
-		return moveCount;
+		movePair[] allMoves = moves.toArray(new movePair[moves.size()]);
+		return allMoves;
 	}
 
 	boolean validateMove(movePair movepr, Pair pr) {	
