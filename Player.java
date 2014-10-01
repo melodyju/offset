@@ -18,7 +18,8 @@ public class Player extends offset.sim.Player {
 
     private static final long ONE_SECOND = 1000000000;      /* a second in nanoseconds */
     private static final long ABORT_TIME = 300000000;       /* buffer time to abort any search from to ensure we don't go over time limit */
-    private static final int MAX_DEPTH = 16;                /* max depth we would want to reach for alpha beta search */
+    private static final int MAX_DEPTH = 2;                /* max depth we would want to reach for alpha beta search */
+    public static final int movesToCheck = 500;
     private static final movePair FORFEIT_MOVE = new movePair(false, null, null);     /* return this when the agent can't move */
     private final MaxActionValueComparator maxComparator = new MaxActionValueComparator(); /* used for sorting ActionValues in descending order */
     private final MinActionValueComparator minComparator = new MinActionValueComparator(); /* used for sorting ActionValues in ascending order */
@@ -31,6 +32,8 @@ public class Player extends offset.sim.Player {
 
 	public Player(Pair prin, int idin) {
 		super(prin, idin);
+
+        System.out.println("MY ID: " + id);
 
         moveTimeLimit = (long) (ONE_SECOND * 0.2); // convert 0.2 seconds to nanoseconds
         recentStates = null;
@@ -68,7 +71,20 @@ public class Player extends offset.sim.Player {
 	}
 
     public double score(OffsetState state) {
-        return (double) (myPossibleMoves(state.grid, state.pr).length - yourPossibleMoves(state.grid, state.pr0).length);
+        if (stateEvaluations.containsKey(state)) {
+            return stateEvaluations.get(state);
+        }
+
+        double s = 0;
+       
+        // s += myPossibleMoves(state.grid, state.pr).length;
+        // s -= yourPossibleMoves(state.grid, state.pr0).length;
+
+        s += state.gameScore(id);
+        s -= state.gameScore(otherID());
+
+        stateEvaluations.put(state, s);
+        return s;
     }
 
     private movePair[] myPossibleMoves(Point[] grid, Pair pr) {
@@ -176,10 +192,13 @@ public class Player extends offset.sim.Player {
         }
 
         /* return the last succesfully completed search's recommened move */
-        if (av != null)
+        if (av != null) {
+            av.move.move = true;
             return av.move;
-        else
+        }
+        else {
             return null;
+        }
     }
 
     /**
@@ -209,15 +228,22 @@ public class Player extends offset.sim.Player {
         List<int[]> actions;                        /* actions to examine from this state */
         List<int[]> orderedActions = moveOrdering.get(stateNode.getData()); /* might have a predefined ordering, if so use it */
         if (orderedActions == null) {
-            actions = stateNode.getData().validMoves();
+            actions = stateNode.getData().validMoves(id);
         }
         else {
             actions = orderedActions;
         }
 
+        if (actions.size() <= 0) return best;
+
         PriorityQueue<ActionValue> newOrdering = new PriorityQueue<ActionValue>(actions.size(), maxComparator); /* for ordering in later searches from this state */
 
-        for (int[] move : actions) {                                        /* examine every move */
+        //Collections.shuffle(actions, new Random());
+
+        /* examine every move */
+        for (int index = 0; index < actions.size() && index < movesToCheck; index++) {
+            int[] move = actions.get(index);
+
             OffsetState resultState = stateNode.getData().cloneState();    /* clone state to allow manipulation of it */
             resultState.performMove(move, id);
             SearchNode<OffsetState> resultNode = stateNode.addSuccessor(resultState, move); /* enact the move and add it to the search tree */
@@ -275,15 +301,22 @@ public class Player extends offset.sim.Player {
         List<int[]> actions;
         List<int[]> orderedActions = moveOrdering.get(stateNode.getData());
         if (orderedActions == null) {
-            actions = stateNode.getData().validMoves();
+            actions = stateNode.getData().validMoves(otherID());
         }
         else {
             actions = orderedActions;
         }
 
+        if (actions.size() <= 0) return best;
+
         PriorityQueue<ActionValue> newOrdering = new PriorityQueue<ActionValue>(actions.size(), minComparator);
 
-        for (int[] move : actions) {
+        //Collections.shuffle(actions, new Random());
+
+        /* examine every move */
+        for (int index = 0; index < actions.size() && index < movesToCheck; index++) {
+            int[] move = actions.get(index);
+
             OffsetState resultState = stateNode.getData().cloneState();
             resultState.performMove(move, otherID());
             SearchNode<OffsetState> resultNode = stateNode.addSuccessor(resultState, move);
@@ -368,13 +401,14 @@ public class Player extends offset.sim.Player {
      * 2. The search has reached a state that is end-game for gomoku.
      */
     private boolean cutoffTest(SearchNode<OffsetState> stateNode, int maxDepth) {
-        if (stateNode.getDepth() >= maxDepth)
+        if (stateNode.getDepth() >= maxDepth) {
             return true;
+        }
 
         OffsetState state = stateNode.getData();
         int[] lastMove = stateNode.getAction();
 
-        if (lastMove != null && state.hasValidMoves()) { //|| game.moveForcesWin(lastMove))) {
+        if (lastMove != null && !state.hasValidMoves(id)) {
             return true;
         }
 
@@ -387,12 +421,14 @@ public class Player extends offset.sim.Player {
      * stop! 
      */
     private boolean abortTimeTest(long startTime) {
-        long elapsed = System.nanoTime() - startTime;
+        // long elapsed = System.nanoTime() - startTime;
 
-        if (moveTimeLimit - elapsed < ABORT_TIME)
-            return true;
-        else
-            return false;
+        // if (moveTimeLimit - elapsed < ABORT_TIME)
+        //     return true;
+        // else
+        //     return false;
+
+        return false;
     }
 
     /*****

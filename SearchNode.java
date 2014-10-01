@@ -15,7 +15,7 @@ import java.util.ArrayList;
 public class SearchNode<T> {
 
     private SearchNode<T> root;
-    private int depth;
+    public int depth;
     private T data;
     private int[] action;
     private SearchNode<T> parent;

@@ -32,6 +32,29 @@ public class OffsetState {
         }
     }
 
+    public int gameScore(int playerID) {
+        int score = 0;
+
+        for (int i = 0; i < 32; i++) {
+            for (int j = 0; j < 32; j++) {
+                Point p = grid[i * 32 + j];
+                if (p.owner == playerID) {
+                    score += p.value;
+                }
+            }
+        }
+
+        return score;
+    }
+
+    public int hashCode() {
+        return toString().hashCode();
+    }
+
+    public String toString() {
+        return grid.toString() + pr.p + pr.q + pr0.p + pr0.q;
+    }
+
     public void performMove(int[] move, int playerID) {
         performMove(movePairFromIntList(move), playerID);
     }
@@ -76,8 +99,13 @@ public class OffsetState {
         return new OffsetState(newGrid, new Pair(pr.p, pr.q), new Pair(pr0.p, pr0.q));
     }
 
-    public ArrayList<int[]> validMoves() {
+    public ArrayList<int[]> validMoves(int playerID) {
         ArrayList<int[]> moves = new ArrayList<int[]>();
+
+        Pair relevantPR = pr;
+        if (playerID > 0) {
+            relevantPR = pr0;
+        }
 
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
@@ -87,7 +115,7 @@ public class OffsetState {
                         movepr.src = grid[i * size + j];
                         movepr.target = grid[size*i_pr + j_pr];
 
-                        if (validateMove(movepr, pr)) {
+                        if (validateMove(movepr, relevantPR)) {
                             int[] m = new int[]{movepr.src.x, movepr.src.y, movepr.target.x, movepr.target.y};
                             moves.add(m);
                         }
@@ -99,8 +127,8 @@ public class OffsetState {
         return moves;
     }
 
-    public boolean hasValidMoves() {
-        return validMoves().size() > 0;
+    public boolean hasValidMoves(int playerID) {
+        return validMoves(playerID).size() > 0;
     }
 
 }

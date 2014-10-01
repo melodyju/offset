@@ -27,16 +27,18 @@ public class HumanPlayer extends offset.sim.Player {
         moveReader = new BufferedReader(new InputStreamReader(System.in));
     }
 
+    public void init() {}
+
     /**
      * Getting the next move involes reading a move from stdin and ensuring it is a valid selection.
      * 
      * Move should be in the format 'row col' where row and col are integers and 0-indexed.
      */
     public movePair move(Point[] grid, Pair pr, Pair pr0, ArrayList<ArrayList> history) {
-        System.out.println(playerName() + ", please enter your next move.");
+        System.out.println("Player " + id + ", please enter your next move.");
         String moveString;
 
-        movePair mp;
+        movePair mp = null;
 
         try {
             while (!validateMove(mp, pr)) {
@@ -49,8 +51,8 @@ public class HumanPlayer extends offset.sim.Player {
                     int tx = Integer.parseInt(moves[2]);
                     int ty = Integer.parseInt(moves[3]);
                    
-                    mp.src = grid[sx * size + sy];
-                    mp.target = grid[tx * size + ty];
+                    mp.src = grid[sx * 32 + sy];
+                    mp.target = grid[tx * 32 + ty];
                 }
                 catch (Exception e) {
                     System.out.println("Format is <src row> <src col> <target row> <target col>, both integers!");
