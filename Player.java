@@ -28,8 +28,10 @@ public class Player extends offset.sim.Player {
 			for (int j = 0; j < size; j++) {
 				for (int i_pr=0; i_pr < size; i_pr++) {
 					for (int j_pr=0; j_pr < size; j_pr++) {
+
 						movepr.src = grid[i*size + j];
 						movepr.target = grid[size*i_pr + j_pr];
+						
 						if (validateMove(movepr, pr)) {
 							movepr.move = true;
 							return movepr;
@@ -40,6 +42,52 @@ public class Player extends offset.sim.Player {
 		}
 
 		return movepr;
+	}
+
+	public int evaluateBoard(Point[] grid, Pair pr, Pair pr0) {
+		return (numPossibleMovesForMe(grid, pr) - numPossibleMovesForOpponent(grid, pr0));
+	}
+
+	private int numPossibleMovesForMe(Point[] grid, Pair pr) {
+		int moveCount = 0;
+		movePair movepr = new movePair();
+
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				for (int i_pr=0; i_pr < size; i_pr++) {
+					for (int j_pr=0; j_pr < size; j_pr++) {
+						movepr.src = grid[i*size + j];
+						movepr.target = grid[size*i_pr + j_pr];
+						if (validateMove(movepr, pr)) {
+							moveCount++;
+						}
+					}
+				}
+			}
+		}
+
+		return moveCount;
+	}
+
+	private int numPossibleMovesForOpponent(Point[] grid, Pair pr0) {
+		int moveCount = 0;
+		movePair movepr = new movePair();
+
+		for (int i = 0; i < size; i++) {
+			for (int j = 0; j < size; j++) {
+				for (int i_pr=0; i_pr < size; i_pr++) {
+					for (int j_pr=0; j_pr < size; j_pr++) {
+						movepr.src = grid[i*size + j];
+						movepr.target = grid[size*i_pr + j_pr];
+						if (validateMove(movepr, pr0)) {
+							moveCount++;
+						}
+					}
+				}
+			}
+		}
+
+		return moveCount;
 	}
 
 	boolean validateMove(movePair movepr, Pair pr) {	
