@@ -18,7 +18,7 @@ public class Player extends offset.sim.Player {
     static final int ALPHA_BETA_MODE = 1;
     static final int HUMAN_MODE = 2;
 
-    int currentMode = HUMAN_MODE;
+    int currentMode = ALPHA_BETA_MODE;
 
     offset.sim.Player actualPlayer;
 

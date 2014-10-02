@@ -32,6 +32,10 @@ public class OffsetState {
         }
     }
 
+    public void performMove(int[] move, int playerID) {
+        performMove(movePairFromIntList(move), playerID);
+    }
+
     public int gameScore(int playerID) {
         int score = 0;
 
@@ -55,17 +59,13 @@ public class OffsetState {
         return grid.toString() + pr.p + pr.q + pr0.p + pr0.q;
     }
 
-    public void performMove(int[] move, int playerID) {
-        performMove(movePairFromIntList(move), playerID);
-    }
-
     public int[] intListFromMovePair(movePair mp) {
         return new int[]{mp.src.x, mp.src.y, mp.target.x, mp.target.y};
     }
 
     public movePair movePairFromIntList(int[] move) {
         movePair movepr = new movePair();
-        movepr.move = false;
+        movepr.move = true;
         movepr.src = grid[move[0] * size + move[1]];
         movepr.target = grid[size * move[2] + move[3]];
         return movepr;
@@ -94,7 +94,11 @@ public class OffsetState {
 
     public OffsetState cloneState() {
         Point[] newGrid = new Point[grid.length];
-        System.arraycopy(grid, 0, newGrid, 0, grid.length);
+
+        for (int i = 0; i < grid.length; i++) {
+            Point p = grid[i];
+            newGrid[i] = clonePoint(p);
+        }
 
         return new OffsetState(newGrid, new Pair(pr.p, pr.q), new Pair(pr0.p, pr0.q));
     }
@@ -129,6 +133,12 @@ public class OffsetState {
 
     public boolean hasValidMoves(int playerID) {
         return validMoves(playerID).size() > 0;
+    }
+
+    public static Point clonePoint(Point p) {
+        Point pClone = new Point(p.x, p.y, p.value, p.owner);
+        pClone.change = p.change;
+        return pClone;
     }
 
 }
