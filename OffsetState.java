@@ -15,17 +15,26 @@ public class OffsetState {
     public Pair pr;
     public Pair pr0;
 
+    private ArrayList<int[]> myValidMoves;
+    private ArrayList<int[]> theirValidMoves;
+
     public OffsetState(Point[] grid, Pair pair1, Pair pair2) {
-        this.grid = grid;
-        this.pr = pair1;
-        this.pr0 = pair2;
+        this.grid = cloneGrid(grid);
+        this.pr = clonePair(pair1);
+        this.pr0 = clonePair(pair2);
+
+        myValidMoves = null;
+        theirValidMoves = null;
     }
 
     public void performMove(movePair movepr, int playerID) {
         if (movepr.move) {
-            Point src = grid[movepr.src.x * size + movepr.src.y];
-            Point target = grid[movepr.target.x * size + movepr.target.y];
-            target.value = target.value+src.value;
+            movePair trueMovePair = gridsMovePairFromOutsideMovePair(movepr);
+
+            Point src = trueMovePair.src;
+            Point target = trueMovePair.target;
+
+            target.value = target.value + src.value;
             src.value = 0;
             target.owner = playerID;
             src.owner = -1;
@@ -52,7 +61,12 @@ public class OffsetState {
     }
 
     public int hashCode() {
-        return toString().hashCode();
+        return grid.hashCode();
+    }
+
+    public boolean equals(Object state2) {
+        OffsetState s = (OffsetState) state2;
+        return s.grid.equals(grid);
     }
 
     public String toString() {
@@ -66,25 +80,39 @@ public class OffsetState {
     public movePair movePairFromIntList(int[] move) {
         movePair movepr = new movePair();
         movepr.move = true;
-        movepr.src = grid[move[0] * size + move[1]];
-        movepr.target = grid[size * move[2] + move[3]];
+        movepr.src = null; movepr.target = null;
+
+        for (Point p : grid) {
+            if (p.x == move[0] && p.y == move[1]) {
+                movepr.src = p;
+            } else if (p.x == move[2] && p.y == move[3]) {
+                movepr.target = p;
+            }
+
+            if (movepr.src != null && movepr.target != null) {
+                break;
+            }
+        }
+
         return movepr;
     }
 
-    public boolean validateMove(movePair movepr, Pair pr) {    
-        if (movepr == null || movepr.src == null || movepr.target == null) return false;
+    public movePair gridsMovePairFromOutsideMovePair(movePair outsideMovePair) {
+        return movePairFromIntList(new int[]{outsideMovePair.src.x, outsideMovePair.src.y, outsideMovePair.target.x, outsideMovePair.target.y});
+    }
 
+    public boolean validateMove(movePair movepr, Pair pair) {
         Point src = movepr.src;
         Point target = movepr.target;
         boolean rightposition = false;
 
-        if (Math.abs(target.x-src.x)==Math.abs(pr.p) && Math.abs(target.y-src.y)==Math.abs(pr.q)) {
+        if (Math.abs(target.x-src.x) == Math.abs(pair.p) && Math.abs(target.y-src.y) == Math.abs(pair.q)) {
             rightposition = true;
         }
-        if (Math.abs(target.x-src.x)==Math.abs(pr.p) && Math.abs(target.y-src.y)==Math.abs(pr.q)) {
+        if (Math.abs(target.x-src.x) == Math.abs(pair.q) && Math.abs(target.y-src.y) == Math.abs(pair.p)) {
             rightposition = true;
         }
-        if (rightposition && src.value == target.value && src.value >0) {
+        if (rightposition && src.value == target.value && src.value > 0) {
             return true;
         }
         else {
@@ -93,31 +121,31 @@ public class OffsetState {
     }
 
     public OffsetState cloneState() {
-        Point[] newGrid = new Point[grid.length];
-
-        for (int i = 0; i < grid.length; i++) {
-            Point p = grid[i];
-            newGrid[i] = clonePoint(p);
-        }
-
-        return new OffsetState(newGrid, new Pair(pr.p, pr.q), new Pair(pr0.p, pr0.q));
+        return new OffsetState(cloneGrid(grid), clonePair(pr), clonePair(pr0));
     }
 
-    public ArrayList<int[]> validMoves(int playerID) {
+    public ArrayList<int[]> validMoves(boolean mine) {
+        if (mine && myValidMoves != null) return myValidMoves;
+
+        if (!mine && theirValidMoves != null) return theirValidMoves;
+
         ArrayList<int[]> moves = new ArrayList<int[]>();
 
-        Pair relevantPR = pr;
-        if (playerID > 0) {
+        Pair relevantPR = null;
+        if (mine) {
+            relevantPR = pr;
+        } else {
             relevantPR = pr0;
         }
+
+        movePair movepr = new movePair();
 
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
                  for (int i_pr=0; i_pr < size; i_pr++) {
                      for (int j_pr=0; j_pr < size; j_pr++) {
-                        movePair movepr = new movePair();
                         movepr.src = grid[i * size + j];
-                        movepr.target = grid[size*i_pr + j_pr];
+                        movepr.target = grid[i_pr * size + j_pr];
 
                         if (validateMove(movepr, relevantPR)) {
                             int[] m = new int[]{movepr.src.x, movepr.src.y, movepr.target.x, movepr.target.y};
@@ -128,17 +156,52 @@ public class OffsetState {
             }
         }
 
+        if (mine) {
+            myValidMoves = moves;
+        } else {
+            theirValidMoves = moves;
+        }
+
         return moves;
     }
 
-    public boolean hasValidMoves(int playerID) {
-        return validMoves(playerID).size() > 0;
+    public boolean hasValidMoves(boolean mine) {
+        return validMoves(mine).size() > 0;
     }
 
     public static Point clonePoint(Point p) {
         Point pClone = new Point(p.x, p.y, p.value, p.owner);
         pClone.change = p.change;
         return pClone;
+    }
+
+    public static Point[] cloneGrid(Point[] grid) {
+        Point[] newGrid = new Point[grid.length];
+
+        for (int i = 0; i < grid.length; i++) {
+            Point p = grid[i];
+            newGrid[i] = clonePoint(p);
+        }
+
+        return newGrid;
+    }
+
+    public static Pair clonePair(Pair p) {
+        return new Pair(p.p, p.q);
+    }
+
+    public static String prettyGrid(Point[] grid) {
+        String s = "";
+        
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                Point p = grid[j * size + i];
+                s += "| " + p.value + " |";
+            }
+            s += "\n";
+        }
+
+        return s;
     }
 
 }

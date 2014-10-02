@@ -19,7 +19,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     private static final long ONE_SECOND = 1000000000;      /* a second in nanoseconds */
     private static final long ABORT_TIME = 300000000;       /* buffer time to abort any search from to ensure we don't go over time limit */
     private static final int MAX_DEPTH = 2;                /* max depth we would want to reach for alpha beta search */
-    public static final int movesToCheck = 500;
+    public static final int movesToCheck = 600;
     private static final movePair FORFEIT_MOVE = new movePair(false, null, null);     /* return this when the agent can't move */
     private final MaxActionValueComparator maxComparator = new MaxActionValueComparator(); /* used for sorting ActionValues in descending order */
     private final MinActionValueComparator minComparator = new MinActionValueComparator(); /* used for sorting ActionValues in ascending order */
@@ -29,6 +29,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     private HashMap<OffsetState, Double> stateEvaluations;       /* a transition table of OffsetState to heuristic score */
 
     public Point[] currentGrid;
+    public OffsetState currentState;
 
 	public AlphaBetaPlayer(Pair prin, int idin) {
 		super(prin, idin);
@@ -48,10 +49,11 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 	public movePair move(Point[] grid, Pair pr, Pair pr0, ArrayList<ArrayList> history) {
         currentGrid = grid;
 
-        OffsetState currentState = new OffsetState(grid, pr, pr0);
+        currentState = new OffsetState(grid, pr, pr0);
 
-        if (recentStates == null)
+        if (recentStates == null) {
             recentStates = new SearchNode<OffsetState>(currentState);
+        }
 
         stateEvaluations.clear(); /* have to clear this or we run out of memory */
 
@@ -77,79 +79,14 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 
         double s = 0;
        
-        // s += myPossibleMoves(state.grid, state.pr).length;
-        // s -= yourPossibleMoves(state.grid, state.pr0).length;
+        // s += state.validMoves(true).length;
+        // s -= state.validMoves(false).length;
 
         s += state.gameScore(id);
         s -= state.gameScore(otherID());
 
         stateEvaluations.put(state, s);
         return s;
-    }
-
-    private movePair[] myPossibleMoves(Point[] grid, Pair pr) {
-        ArrayList<movePair> moves = new ArrayList<movePair>();
-        movePair movepr = new movePair();
-
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                for (int i_pr=0; i_pr < size; i_pr++) {
-                    for (int j_pr=0; j_pr < size; j_pr++) {
-                        movepr.src = grid[i*size + j];
-                        movepr.target = grid[size*i_pr + j_pr];
-                        if (validateMove(movepr, pr)) {
-                            moves.add(movepr);
-                        }
-                    }
-                }
-            }
-        }
-
-        movePair[] allMoves = moves.toArray(new movePair[moves.size()]);
-        return allMoves;
-    }
-
-    private movePair[] yourPossibleMoves(Point[] grid, Pair pr0) {
-        ArrayList<movePair> moves = new ArrayList<movePair>();
-        movePair movepr = new movePair();
-
-        for (int i = 0; i < size; i++) {
-            for (int j = 0; j < size; j++) {
-                for (int i_pr=0; i_pr < size; i_pr++) {
-                    for (int j_pr=0; j_pr < size; j_pr++) {
-                        movepr.src = grid[i*size + j];
-                        movepr.target = grid[size*i_pr + j_pr];
-                        if (validateMove(movepr, pr0)) {
-                            moves.add(movepr);
-                        }
-                    }
-                }
-            }
-        }
-
-        movePair[] allMoves = moves.toArray(new movePair[moves.size()]);
-        return allMoves;
-    }
-
-	boolean validateMove(movePair movepr, Pair pr) {	
-        if (movepr == null || movepr.src == null || movepr.target == null) return false;
-
-    	Point src = movepr.src;
-    	Point target = movepr.target;
-    	boolean rightposition = false;
-
-    	if (Math.abs(target.x-src.x)==Math.abs(pr.p) && Math.abs(target.y-src.y)==Math.abs(pr.q)) {
-    		rightposition = true;
-    	}
-    	if (Math.abs(target.x-src.x)==Math.abs(pr.p) && Math.abs(target.y-src.y)==Math.abs(pr.q)) {
-    		rightposition = true;
-    	}
-        if (rightposition && src.value == target.value && src.value >0) {
-        	return true;
-        }
-        else {
-        	return false;
-        }
     }
 
     public String toString() {
@@ -211,7 +148,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
      */
     private ActionValue alphaBetaMaxVal(SearchNode<OffsetState> stateNode, double alpha, double beta, int maxDepth, Long startTime, HashMap<OffsetState, List<int[]>> moveOrdering) {
         /* time to quit the search, return the heuristic value of the current state and action that led to it */
-        if (cutoffTest(stateNode, maxDepth)) {
+        if (cutoffTest(stateNode, maxDepth, true)) {
             ActionValue av = new ActionValue(score(stateNode.getData()), stateNode.getAction());
             return av;
         }
@@ -228,17 +165,19 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         List<int[]> actions;                        /* actions to examine from this state */
         List<int[]> orderedActions = moveOrdering.get(stateNode.getData()); /* might have a predefined ordering, if so use it */
         if (orderedActions == null) {
-            actions = stateNode.getData().validMoves(id);
+            actions = stateNode.getData().validMoves(true);
         }
         else {
             actions = orderedActions;
         }
 
+        //System.out.println("MY MOVES: " + actions);
+
         if (actions.size() <= 0) return best;
 
         PriorityQueue<ActionValue> newOrdering = new PriorityQueue<ActionValue>(actions.size(), maxComparator); /* for ordering in later searches from this state */
 
-        //Collections.shuffle(actions, new Random());
+        Collections.shuffle(actions, new Random());
 
         /* examine every move */
         for (int index = 0; index < actions.size() && index < movesToCheck; index++) {
@@ -285,7 +224,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
      * In-line comments here are only adressing changes from the 'max' version.
      */
     private ActionValue alphaBetaMinVal(SearchNode<OffsetState> stateNode, double alpha, double beta, int maxDepth, long startTime, HashMap<OffsetState, List<int[]>> moveOrdering) {
-        if (cutoffTest(stateNode, maxDepth)) {
+        if (cutoffTest(stateNode, maxDepth, false)) {
             ActionValue av = new ActionValue(score(stateNode.getData()), stateNode.getAction());
             return av;
         }
@@ -301,7 +240,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         List<int[]> actions;
         List<int[]> orderedActions = moveOrdering.get(stateNode.getData());
         if (orderedActions == null) {
-            actions = stateNode.getData().validMoves(otherID());
+            actions = stateNode.getData().validMoves(false);
         }
         else {
             actions = orderedActions;
@@ -311,7 +250,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 
         PriorityQueue<ActionValue> newOrdering = new PriorityQueue<ActionValue>(actions.size(), minComparator);
 
-        //Collections.shuffle(actions, new Random());
+        Collections.shuffle(actions, new Random());
 
         /* examine every move */
         for (int index = 0; index < actions.size() && index < movesToCheck; index++) {
@@ -356,11 +295,23 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         return new int[]{mp.src.x, mp.src.y, mp.target.x, mp.target.y};
     }
 
-    public static movePair movePairFromIntList(int[] move, Point[] grid) {
+    public movePair movePairFromIntList(int[] move, Point[] grid) {
         movePair movepr = new movePair();
-        movepr.move = false;
-        movepr.src = grid[move[0] * size + move[1]];
-        movepr.target = grid[size * move[2] + move[3]];
+        movepr.move = true;
+        movepr.src = null; movepr.target = null;
+
+        for (Point p : grid) {
+            if (p.x == move[0] && p.y == move[1]) {
+                movepr.src = p;
+            } else if (p.x == move[2] && p.y == move[3]) {
+                movepr.target = p;
+            }
+
+            if (movepr.src != null && movepr.target != null) {
+                break;
+            }
+        }
+        
         return movepr;
     }
 
@@ -400,7 +351,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
      * 1. The search has reached the maximum depth for the current iteration.
      * 2. The search has reached a state that is end-game for gomoku.
      */
-    private boolean cutoffTest(SearchNode<OffsetState> stateNode, int maxDepth) {
+    private boolean cutoffTest(SearchNode<OffsetState> stateNode, int maxDepth, boolean mine) {
         if (stateNode.getDepth() >= maxDepth) {
             return true;
         }
@@ -408,7 +359,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         OffsetState state = stateNode.getData();
         int[] lastMove = stateNode.getAction();
 
-        if (lastMove != null && !state.hasValidMoves(id)) {
+        if (lastMove != null && !state.hasValidMoves(mine)) {
             return true;
         }
 
