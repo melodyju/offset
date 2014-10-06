@@ -81,11 +81,11 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         ArrayList<movePair> theirValidMoves = state.validMovesAsMovePairs(false);
 
         for (movePair mp : myValidMoves) {
-            s += mp.target.value;
+            s += Math.pow(mp.target.value, 1.15);
         }
 
         for (movePair mp : theirValidMoves) {
-            s -= mp.target.value;
+            s -= Math.pow(mp.target.value, 1.15);
         }
 
         s += state.gameScore(id);
@@ -106,6 +106,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     /*****
     *
     * ALPHA-BETA SEARCH !!!!!
+    *
     */
 
     /**
@@ -176,8 +177,6 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         else {
             actions = orderedActions;
         }
-
-        //System.out.println("MY MOVES: " + actions);
 
         if (actions.size() <= 0) return best;
 
