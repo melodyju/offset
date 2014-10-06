@@ -19,12 +19,16 @@ public class OffsetState {
     private ArrayList<int[]> theirValidMoves;
 
     public OffsetState(Point[] grid, Pair pair1, Pair pair2) {
+        this(grid, pair1, pair2, null, null);
+    }
+
+    private OffsetState(Point[] grid, Pair pair1, Pair pair2, ArrayList<int[]> myValidMoves, ArrayList<int[]> theirValidMoves) {
         this.grid = cloneGrid(grid);
         this.pr = clonePair(pair1);
         this.pr0 = clonePair(pair2);
 
-        myValidMoves = null;
-        theirValidMoves = null;
+        this.myValidMoves = myValidMoves;
+        this.theirValidMoves = theirValidMoves;
     }
 
     public void performMove(movePair movepr, int playerID) {
@@ -80,7 +84,6 @@ public class OffsetState {
     public movePair movePairFromIntList(int[] move) {
         movePair movepr = new movePair();
         movepr.move = true;
-        movepr.src = null; movepr.target = null;
 
         for (Point p : grid) {
             if (p.x == move[0] && p.y == move[1]) {
@@ -121,7 +124,7 @@ public class OffsetState {
     }
 
     public OffsetState cloneState() {
-        return new OffsetState(cloneGrid(grid), clonePair(pr), clonePair(pr0));
+        return new OffsetState(cloneGrid(grid), clonePair(pr), clonePair(pr0), myValidMoves, theirValidMoves);
     }
 
     public ArrayList<int[]> validMoves(boolean mine) {
@@ -142,15 +145,17 @@ public class OffsetState {
 
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                 for (int i_pr=0; i_pr < size; i_pr++) {
-                     for (int j_pr=0; j_pr < size; j_pr++) {
-                        movepr.src = grid[i * size + j];
-                        movepr.target = grid[i_pr * size + j_pr];
+                movepr.src = grid[i * size + j];
 
-                        if (validateMove(movepr, relevantPR)) {
-                            int[] m = new int[]{movepr.src.x, movepr.src.y, movepr.target.x, movepr.target.y};
-                            moves.add(m);
-                        }
+                ArrayList<Point> potentiallyValidPoints = potentialMovesFromPoint(i, j, relevantPR);
+                for (Point p : potentiallyValidPoints) {
+                    if (p.x < 0 || p.y < 0 || p.x >= size || p.y >= size) continue;
+
+                    movepr.target = grid[p.x * size + p.y];
+
+                    if (validateMove(movepr, relevantPR)) {
+                        int[] m = new int[]{movepr.src.x, movepr.src.y, movepr.target.x, movepr.target.y};
+                        moves.add(m);
                     }
                 }
             }
@@ -163,6 +168,55 @@ public class OffsetState {
         }
 
         return moves;
+    }
+
+    public ArrayList<movePair> validMovesAsMovePairs(boolean mine) {
+        ArrayList<movePair> moves = new ArrayList<movePair>();
+
+        Pair relevantPR = null;
+        if (mine) {
+            relevantPR = pr;
+        } else {
+            relevantPR = pr0;
+        }
+
+        movePair movepr = new movePair();
+
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++) {
+                movepr.src = grid[i * size + j];
+
+                ArrayList<Point> potentiallyValidPoints = potentialMovesFromPoint(i, j, relevantPR);
+                for (Point p : potentiallyValidPoints) {
+                    if (p.x < 0 || p.y < 0 || p.x >= size || p.y >= size) continue;
+
+                    movepr.target = grid[p.x * size + p.y];
+
+                    if (validateMove(movepr, relevantPR)) {
+                        moves.add(movepr);
+                    }
+                }
+            }
+        }
+
+        return moves;
+    }
+
+    private ArrayList<Point> potentialMovesFromPoint(int i, int j, Pair pair) {
+        Point src = grid[i * size + j];
+
+        ArrayList<Point> list = new ArrayList<Point>(8);
+
+        list.add(new Point(src.x + pair.p, src.y + pair.q, -1, -1));
+        list.add(new Point(src.x + pair.p, src.y - pair.q, -1, -1));
+        list.add(new Point(src.x - pair.p, src.y + pair.q, -1, -1));
+        list.add(new Point(src.x - pair.p, src.y - pair.q, -1, -1));
+        list.add(new Point(src.x + pair.q, src.y + pair.p, -1, -1));
+        list.add(new Point(src.x + pair.q, src.y - pair.p, -1, -1));
+        list.add(new Point(src.x - pair.q, src.y + pair.p, -1, -1));
+        list.add(new Point(src.x - pair.q, src.y - pair.p, -1, -1));
+
+        return list;
     }
 
     public boolean hasValidMoves(boolean mine) {

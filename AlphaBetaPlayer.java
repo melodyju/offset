@@ -19,14 +19,14 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     private static final long ONE_SECOND = 1000000000;      /* a second in nanoseconds */
     private static final long ABORT_TIME = 300000000;       /* buffer time to abort any search from to ensure we don't go over time limit */
     private static final int MAX_DEPTH = 2;                /* max depth we would want to reach for alpha beta search */
-    public static final int movesToCheck = 1000;
+    public static final int movesToCheck = 200;
     private static final movePair FORFEIT_MOVE = new movePair(false, null, null);     /* return this when the agent can't move */
     private final MaxActionValueComparator maxComparator = new MaxActionValueComparator(); /* used for sorting ActionValues in descending order */
     private final MinActionValueComparator minComparator = new MinActionValueComparator(); /* used for sorting ActionValues in ascending order */
 
     private long moveTimeLimit;                             /* time to select a move in ns */
     private SearchNode<OffsetState> recentStates;                /* essentially a linked list of recent moves in game */
-    private HashMap<OffsetState, Double> stateEvaluations;       /* a transition table of OffsetState to heuristic score */
+    private HashMap<Point[], Double> stateEvaluations;       /* a transition table of OffsetState to heuristic score */
 
     public Point[] currentGrid;
     public OffsetState currentState;
@@ -34,12 +34,10 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 	public AlphaBetaPlayer(Pair prin, int idin) {
 		super(prin, idin);
 
-        System.out.println("MY ID: " + id);
-
         moveTimeLimit = (long) (ONE_SECOND * 0.2); // convert 0.2 seconds to nanoseconds
         recentStates = null;
 
-        stateEvaluations = new HashMap<OffsetState, Double>();
+        stateEvaluations = new HashMap<Point[], Double>();
 	}
 
 	public void init() {
@@ -73,19 +71,27 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 	}
 
     public double score(OffsetState state) {
-        if (stateEvaluations.containsKey(state)) {
-            return stateEvaluations.get(state);
+        if (stateEvaluations.containsKey(state.grid)) {
+            return stateEvaluations.get(state.grid);
         }
 
         double s = 0;
-       
-        // s += state.validMoves(true).length;
-        // s -= state.validMoves(false).length;
 
-        s += state.gameScore(id);
-        s -= state.gameScore(otherID());
+        ArrayList<movePair> myValidMoves = state.validMovesAsMovePairs(true);
+        ArrayList<movePair> theirValidMoves = state.validMovesAsMovePairs(false);
 
-        stateEvaluations.put(state, s);
+        for (movePair mp : myValidMoves) {
+            s += mp.target.value;
+        }
+
+        for (movePair mp : theirValidMoves) {
+            s -= mp.target.value;
+        }
+
+        //s += state.gameScore(id);
+        //s -= state.gameScore(otherID());
+
+        stateEvaluations.put(state.grid, s);
         return s;
     }
 
