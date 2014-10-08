@@ -105,6 +105,8 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 
         // TODO: definitely pick a steal if it is really valuable (this means having the score take into account the move)
 
+        // TODO: also focus on moves where the source or target is currently vulnerable to a steal, but could be saved with a move
+
         stateEvaluations.put(state.grid, s);
         return s;
     }
