@@ -22,7 +22,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     
     public static final int MOVES_TO_CHECK = 250;
     public static final int GOOD_MOVE_LIMIT = 3;
-    public static final int GOOD_MOVE_CONTROL_COUNT = 90;
+    public static final int GOOD_MOVE_CONTROL_COUNT = 100;
     public static final double THEIR_MOVE_WEIGHT = 1.3;
     public static final double BIG_SQUARE_POWER = 1.18;
     
@@ -427,11 +427,18 @@ public class AlphaBetaPlayer extends offset.sim.Player {
             moveListSize = GOOD_MOVE_CONTROL_COUNT;
         }
 
-        // TODO: add moves that could prevent a steal
+        // TODO: add moves that prevent a steal from us
         // for (movePair mp : legalMoves) {
-        //     if ((mp.src.owner == id && sourcesTargetReachableFromWithValue(mp.src, mp.src.value, id, state.pr0, state) > 0) ||
-        //         (mp.target.owner == id && sourcesTargetReachableFromWithValue(mp.target, mp.target.value, id, state.pr0, state) > 0) {
-        //         // want to try to prevent a theft next turn
+        //     int[] move = intListFromMovePair(mp);
+
+        //     // if making this move won't lead to a steal
+        //     if (!moveSet.contains(move) && sourcesTargetReachableFromNextTurn(mp.target, id, state.pr0, state) <= 0) {
+        //         // and if either the source or target is currently vulnerable to a steal
+        //         if ((mp.src.owner == id && sourcesTargetReachableFromWithValue(mp.src, mp.src.value, id, state.pr0, state) > 0) ||
+        //             (mp.target.owner == id && sourcesTargetReachableFromWithValue(mp.target, mp.target.value, id, state.pr0, state) > 0)) {
+        //                 goodMoves.add(move);
+        //                 moveSet.add(move);
+        //         }
         //     }
         // }
 
