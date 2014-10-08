@@ -19,7 +19,13 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     private static final long ONE_SECOND = 1000000000;      /* a second in nanoseconds */
     private static final long ABORT_TIME = 300000000;       /* buffer time to abort any search from to ensure we don't go over time limit */
     private static final int MAX_DEPTH = 2;                /* max depth we would want to reach for alpha beta search */
-    public static final int movesToCheck = 250;
+    
+    public static final int MOVES_TO_CHECK = 250;
+    public static final int GOOD_MOVE_LIMIT = 3;
+    public static final int GOOD_MOVE_CONTROL_COUNT = 88;
+    public static final double THEIR_MOVE_WEIGHT = 1.35;
+    public static final double BIG_SQUARE_POWER = 1.19;
+    
     private static final movePair FORFEIT_MOVE = new movePair(false, null, null);     /* return this when the agent can't move */
     private final MaxActionValueComparator maxComparator = new MaxActionValueComparator(); /* used for sorting ActionValues in descending order */
     private final MinActionValueComparator minComparator = new MinActionValueComparator(); /* used for sorting ActionValues in ascending order */
@@ -81,15 +87,23 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         ArrayList<movePair> theirValidMoves = state.validMovesAsMovePairs(false);
 
         for (movePair mp : myValidMoves) {
-            s += Math.pow(mp.target.value, 1.15);
+            s += Math.pow(mp.target.value, BIG_SQUARE_POWER);
         }
 
         for (movePair mp : theirValidMoves) {
-            s -= Math.pow(mp.target.value, 1.15);
+            s -= Math.pow(mp.target.value, BIG_SQUARE_POWER) * THEIR_MOVE_WEIGHT; // their moves are worth more
         }
 
         s += state.gameScore(id);
         s -= state.gameScore(otherID());
+
+        // TODO: devalue board based on moves the opponent can steal
+
+        // TODO: do better in the early game
+
+        // TODO: do better in the late game
+
+        // TODO: definitely pick a steal if it is really valuable (this means having the score take into account the move)
 
         stateEvaluations.put(state.grid, s);
         return s;
@@ -171,21 +185,22 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 
         List<int[]> actions;                        /* actions to examine from this state */
         List<int[]> orderedActions = moveOrdering.get(stateNode.getData()); /* might have a predefined ordering, if so use it */
+        List<movePair> movePairActions;
+
         if (orderedActions == null) {
-            actions = stateNode.getData().validMoves(true);
+            movePairActions = stateNode.getData().validMovesAsMovePairs(true);
+            actions = interestingMovesFromPairs(movePairActions, stateNode.getData());
         }
         else {
-            actions = orderedActions;
+            actions = interestingMovesFromInts(orderedActions, stateNode.getData());
         }
 
         if (actions.size() <= 0) return best;
 
         PriorityQueue<ActionValue> newOrdering = new PriorityQueue<ActionValue>(actions.size(), maxComparator); /* for ordering in later searches from this state */
 
-        Collections.shuffle(actions, new Random());
-
         /* examine every move */
-        for (int index = 0; index < actions.size() && index < movesToCheck; index++) {
+        for (int index = 0; index < actions.size(); index++) {
             int[] move = actions.get(index);
 
             OffsetState resultState = stateNode.getData().cloneState();    /* clone state to allow manipulation of it */
@@ -244,21 +259,22 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 
         List<int[]> actions;
         List<int[]> orderedActions = moveOrdering.get(stateNode.getData());
+        List<movePair> movePairActions;
+
         if (orderedActions == null) {
-            actions = stateNode.getData().validMoves(false);
+            movePairActions = stateNode.getData().validMovesAsMovePairs(true);
+            actions = interestingMovesFromPairs(movePairActions, stateNode.getData());
         }
         else {
-            actions = orderedActions;
+            actions = interestingMovesFromInts(orderedActions, stateNode.getData());
         }
 
         if (actions.size() <= 0) return best;
 
         PriorityQueue<ActionValue> newOrdering = new PriorityQueue<ActionValue>(actions.size(), minComparator);
 
-        Collections.shuffle(actions, new Random());
-
         /* examine every move */
-        for (int index = 0; index < actions.size() && index < movesToCheck; index++) {
+        for (int index = 0; index < actions.size(); index++) {
             int[] move = actions.get(index);
 
             OffsetState resultState = stateNode.getData().cloneState();
@@ -385,6 +401,79 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         //     return false;
 
         return false;
+    }
+
+    private List<int[]> interestingMovesFromPairs(List<movePair> legalMoves, OffsetState state) {
+        ArrayList<int[]> goodMoves = new ArrayList<int[]>(MOVES_TO_CHECK);
+        HashSet<int[]> moveSet = new HashSet<int[]>();
+
+        // add any move that we could take away from an opponent
+        for (movePair mp : legalMoves) {
+            if (mp.src.owner == otherID() || mp.target.owner == otherID()) {
+                // we can steal from them
+                if (sourcesTargetReachableFromNextTurn(mp.target, id, state.pr0, state) <= 0) {
+                    // and they can't steal it back
+                    int[] move = intListFromMovePair(mp);
+                    goodMoves.add(move);
+                    moveSet.add(move);
+                }
+            }
+        }
+
+        int moveListSize = MOVES_TO_CHECK;
+        if (goodMoves.size() >= GOOD_MOVE_LIMIT) {
+            moveListSize = GOOD_MOVE_CONTROL_COUNT;
+        }
+
+        // then add random legal moves to fill
+        Collections.shuffle(legalMoves, new Random());
+        for (int i = 0; i < legalMoves.size() && goodMoves.size() <= moveListSize; i++) {
+            movePair mp = legalMoves.get(i);
+            int[] move = intListFromMovePair(mp);
+            // we don't want to add stealable moves
+            if (!moveSet.contains(move) && sourcesTargetReachableFromNextTurn(mp.target, id, state.pr0, state) <= 0) {
+                goodMoves.add(move);
+                moveSet.add(move);
+            }
+        }
+
+        // have to add a bad move if we didn't find a good one
+        if (goodMoves.size() < 1 && legalMoves.size() > 0) {
+            int[] badMove = intListFromMovePair(legalMoves.get(0));
+            goodMoves.add(badMove);
+        }
+
+        return goodMoves;
+    }
+
+    private List<int[]> interestingMovesFromInts(List<int[]> legalMoves, OffsetState state) {
+        ArrayList<movePair> legalMovePairs = new ArrayList<movePair>(legalMoves.size());
+        
+        for (int[] move : legalMoves) {
+            legalMovePairs.add(movePairFromIntList(move, state.grid));
+        }
+
+        return interestingMovesFromPairs(legalMovePairs, state);
+    }
+
+    private int sourcesTargetReachableFromNextTurn(Point target, int ownerID, Pair pair, OffsetState state) {
+        if (target.owner != ownerID) return 0;
+
+        Point nextTarget = new Point(target.x, target.y, target.value * 2, target.owner);
+
+        int count = 0;
+
+        ArrayList<Point> potentialSources = state.potentialMovesFromPoint(nextTarget, pair);
+        for (Point p : potentialSources) {
+            if (p.x < 0 || p.y < 0 || p.x >= size || p.y >= size) continue;
+
+            movePair mp = new movePair(true, state.grid[p.x * size + p.y], nextTarget);
+            if (state.validateMove(mp, pair)) {
+                count++;
+            }
+        }
+
+        return count;
     }
 
     /*****

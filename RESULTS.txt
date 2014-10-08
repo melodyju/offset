@@ -6,3 +6,42 @@ based on her score minus the opponent's score. Wins against dumb player nearly
 every single time (once lost on a 12 d game randomly. Suspect it is because of
 the sampling of 1000 random moves from the potential list). When playing
 itself, our players seem to score relatively easily regardless of pairs.
+
+October 7th, 2014:
+
+results with capture-focused, their-move-weighted (1.5x) player against last submission player, (3,9) vs (4,8), math.pow down to 1.1
+
+658, 256 with control of size 50
+750, 186 with control of size 10
+626, 320 with control of size 250 (aka not preferencing captures)
+536, 424 with control of size 8
+more or less the same with size 10
+622, 310 with control of size 20
+590, 372 with same control
+642, 294 with control 15, limit 2
+624, 322 with same
+didn't win by much with control 6
+LOST with control 2
+600, 356 with control 16, limit 3
+666, 280 with control 50, limit 3
+610, 326 with control 100, limit 3
+
+final verdict for now: control 100 (feels safe)
+
+next: optimize the 1.5x weight and the 1.1 big number power weight
+
+656, 252 with 2.0 weight
+548, 348 with 2.0 weight
+622, 322 with 2.0 weight
+628, 308 with 1.25 weight
+628, 316 with 1.25 weight
+672, 288 with 1.25 weight
+
+final verdict: lets go 1.3 weight for now
+
+630, 310 when we don't allow them to steal from us (control 100)
+656, 278 when we don't allow them to steal from us (control 100)
+588, 352 when we don't allow them to steal from us (control 100)
+680, 258 with control 40
+648, 298 with control 40
+556, 384 with control 40

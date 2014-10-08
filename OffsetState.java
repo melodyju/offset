@@ -180,16 +180,16 @@ public class OffsetState {
             relevantPR = pr0;
         }
 
-        movePair movepr = new movePair();
-
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++) {
-                movepr.src = grid[i * size + j];
+                Point src = grid[i * size + j];
 
                 ArrayList<Point> potentiallyValidPoints = potentialMovesFromPoint(i, j, relevantPR);
                 for (Point p : potentiallyValidPoints) {
                     if (p.x < 0 || p.y < 0 || p.x >= size || p.y >= size) continue;
 
+                    movePair movepr = new movePair();
+                    movepr.src = src;
                     movepr.target = grid[p.x * size + p.y];
 
                     if (validateMove(movepr, relevantPR)) {
@@ -202,9 +202,12 @@ public class OffsetState {
         return moves;
     }
 
-    private ArrayList<Point> potentialMovesFromPoint(int i, int j, Pair pair) {
+    public ArrayList<Point> potentialMovesFromPoint(int i, int j, Pair pair) {
         Point src = grid[i * size + j];
+        return potentialMovesFromPoint(src, pair);
+    }
 
+    public ArrayList<Point> potentialMovesFromPoint(Point src, Pair pair) {
         ArrayList<Point> list = new ArrayList<Point>(8);
 
         list.add(new Point(src.x + pair.p, src.y + pair.q, -1, -1));
