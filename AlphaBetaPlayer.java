@@ -22,9 +22,9 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     
     public static final int MOVES_TO_CHECK = 250;
     public static final int GOOD_MOVE_LIMIT = 3;
-    public static final int GOOD_MOVE_CONTROL_COUNT = 88;
-    public static final double THEIR_MOVE_WEIGHT = 1.35;
-    public static final double BIG_SQUARE_POWER = 1.19;
+    public static final int GOOD_MOVE_CONTROL_COUNT = 90;
+    public static final double THEIR_MOVE_WEIGHT = 1.3;
+    public static final double BIG_SQUARE_POWER = 1.18;
     
     private static final movePair FORFEIT_MOVE = new movePair(false, null, null);     /* return this when the agent can't move */
     private final MaxActionValueComparator maxComparator = new MaxActionValueComparator(); /* used for sorting ActionValues in descending order */
@@ -427,6 +427,14 @@ public class AlphaBetaPlayer extends offset.sim.Player {
             moveListSize = GOOD_MOVE_CONTROL_COUNT;
         }
 
+        // TODO: add moves that could prevent a steal
+        // for (movePair mp : legalMoves) {
+        //     if ((mp.src.owner == id && sourcesTargetReachableFromWithValue(mp.src, mp.src.value, id, state.pr0, state) > 0) ||
+        //         (mp.target.owner == id && sourcesTargetReachableFromWithValue(mp.target, mp.target.value, id, state.pr0, state) > 0) {
+        //         // want to try to prevent a theft next turn
+        //     }
+        // }
+
         // then add random legal moves to fill
         Collections.shuffle(legalMoves, new Random());
         for (int i = 0; i < legalMoves.size() && goodMoves.size() <= moveListSize; i++) {
@@ -459,9 +467,13 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     }
 
     private int sourcesTargetReachableFromNextTurn(Point target, int ownerID, Pair pair, OffsetState state) {
+        return sourcesTargetReachableFromWithValue(target, target.value * 2, ownerID, pair, state);
+    }
+
+    private int sourcesTargetReachableFromWithValue(Point target, int value, int ownerID, Pair pair, OffsetState state) {
         if (target.owner != ownerID) return 0;
 
-        Point nextTarget = new Point(target.x, target.y, target.value * 2, target.owner);
+        Point nextTarget = new Point(target.x, target.y, value, target.owner);
 
         int count = 0;
 
