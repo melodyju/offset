@@ -202,6 +202,18 @@ public class OffsetState {
         return moves;
     }
 
+    public ArrayList<Point> pointsOwned(int id) {
+        ArrayList<Point> points = new ArrayList<Point>();
+
+        for (Point p : grid) {
+            if (p.owner == id) {
+                points.add(p);
+            }
+        }
+
+        return points;
+    }
+
     public ArrayList<Point> potentialMovesFromPoint(int i, int j, Pair pair) {
         Point src = grid[i * size + j];
         return potentialMovesFromPoint(src, pair);

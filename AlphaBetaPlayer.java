@@ -20,11 +20,11 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     private static final long ABORT_TIME = 300000000;       /* buffer time to abort any search from to ensure we don't go over time limit */
     private static final int MAX_DEPTH = 2;                /* max depth we would want to reach for alpha beta search */
     
-    public static final int MOVES_TO_CHECK = 250;
-    public static final int GOOD_MOVE_LIMIT = 3;
-    public static final int GOOD_MOVE_CONTROL_COUNT = 90;
-    public static final double THEIR_MOVE_WEIGHT = 1.3;
-    public static final double BIG_SQUARE_POWER = 1.18;
+    public static final int MOVES_TO_CHECK = 700;
+    public static final int GOOD_MOVE_LIMIT = 2;
+    public static final int GOOD_MOVE_CONTROL_COUNT = 700;
+    public static final double THEIR_MOVE_WEIGHT = 2;
+    public static final double BIG_SQUARE_POWER = 1.25;
     
     private static final movePair FORFEIT_MOVE = new movePair(false, null, null);     /* return this when the agent can't move */
     private final MaxActionValueComparator maxComparator = new MaxActionValueComparator(); /* used for sorting ActionValues in descending order */
@@ -36,6 +36,8 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 
     public Point[] currentGrid;
     public OffsetState currentState;
+
+    private static int hundred_percent_moves = -1; 
 
 	public AlphaBetaPlayer(Pair prin, int idin) {
 		super(prin, idin);
@@ -86,16 +88,42 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         ArrayList<movePair> myValidMoves = state.validMovesAsMovePairs(true);
         ArrayList<movePair> theirValidMoves = state.validMovesAsMovePairs(false);
 
-        for (movePair mp : myValidMoves) {
-            s += Math.pow(mp.target.value, BIG_SQUARE_POWER);
+        int current_moves;
+
+        if (hundred_percent_moves == -1) {
+            hundred_percent_moves = 0;
+            for (movePair mp : myValidMoves) {
+                s += Math.pow(mp.target.value, BIG_SQUARE_POWER);
+                hundred_percent_moves++;
+            }
+            current_moves = hundred_percent_moves;
         }
+        else {
+            current_moves = 0;
+            for (movePair mp : myValidMoves) {
+                s += Math.pow(mp.target.value, BIG_SQUARE_POWER);
+                current_moves++;
+            }
+        }
+
+        double move_ratio = (current_moves + (hundred_percent_moves - current_moves)/2) / hundred_percent_moves + 0.01;
 
         for (movePair mp : theirValidMoves) {
             s -= Math.pow(mp.target.value, BIG_SQUARE_POWER) * THEIR_MOVE_WEIGHT; // their moves are worth more
         }
 
-        s += state.gameScore(id);
-        s -= state.gameScore(otherID());
+        //s += (state.gameScore(id) / move_ratio);
+        //s -= (state.gameScore(otherID()) / move_ratio);
+
+        List<Point> myPoints = state.pointsOwned(id);
+        for (Point p : myPoints) {
+            s += Math.pow(p.value, BIG_SQUARE_POWER);
+        }
+
+        List<Point> theirPoints = state.pointsOwned(otherID());
+        for (Point p : theirPoints) {
+            s -= Math.pow(p.value, BIG_SQUARE_POWER);
+        }
 
         // TODO: devalue board based on moves the opponent can steal
 
