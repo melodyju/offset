@@ -25,7 +25,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     public static final int GOOD_MOVE_CONTROL_COUNT = 700;
     public static final double THEIR_MOVE_WEIGHT = 2;
     public static final double BIG_SQUARE_POWER = 1.25;
-    
+
     private static final movePair FORFEIT_MOVE = new movePair(false, null, null);     /* return this when the agent can't move */
     private final MaxActionValueComparator maxComparator = new MaxActionValueComparator(); /* used for sorting ActionValues in descending order */
     private final MinActionValueComparator minComparator = new MinActionValueComparator(); /* used for sorting ActionValues in ascending order */
@@ -219,10 +219,10 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 
         if (orderedActions == null) {
             movePairActions = stateNode.getData().validMovesAsMovePairs(true);
-            actions = interestingMovesFromPairs(movePairActions, stateNode.getData());
+            actions = interestingMovesFromPairs(movePairActions, stateNode.getData(), true);
         }
         else {
-            actions = interestingMovesFromInts(orderedActions, stateNode.getData());
+            actions = interestingMovesFromInts(orderedActions, stateNode.getData(), true);
         }
 
         if (actions.size() <= 0) return best;
@@ -288,15 +288,15 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         ActionValue best = null;
 
         List<int[]> actions;
-        List<int[]> orderedActions = moveOrdering.get(stateNode.getData());
+        List<int[]> orderedActions = null; // move away // moveOrdering.get(stateNode.getData());
         List<movePair> movePairActions;
 
         if (orderedActions == null) {
-            movePairActions = stateNode.getData().validMovesAsMovePairs(true);
-            actions = interestingMovesFromPairs(movePairActions, stateNode.getData());
+            movePairActions = stateNode.getData().validMovesAsMovePairs(false);
+            actions = interestingMovesFromPairs(movePairActions, stateNode.getData(), false);
         }
         else {
-            actions = interestingMovesFromInts(orderedActions, stateNode.getData());
+            actions = interestingMovesFromInts(orderedActions, stateNode.getData(), false);
         }
 
         if (actions.size() <= 0) return best;
@@ -433,15 +433,29 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         return false;
     }
 
-    private List<int[]> interestingMovesFromPairs(List<movePair> legalMoves, OffsetState state) {
+    private List<int[]> interestingMovesFromPairs(List<movePair> legalMoves, OffsetState state, boolean mine) {
         ArrayList<int[]> goodMoves = new ArrayList<int[]>(MOVES_TO_CHECK);
         HashSet<int[]> moveSet = new HashSet<int[]>();
 
+				int myID, theirID;
+				Pair myPair, theirPair;
+				if (mine) {
+					myID = id;
+					theirID = otherID();
+					myPair = state.pr;
+					theirPair = state.pr0;
+				} else {
+					myID = otherID();
+					theirID = id;
+					myPair = state.pr0;
+					theirPair = state.pr;
+				}
+
         // add any move that we could take away from an opponent
         for (movePair mp : legalMoves) {
-            if (mp.src.owner == otherID() || mp.target.owner == otherID()) {
+            if (mp.src.owner == theirID || mp.target.owner == theirID) {
                 // we can steal from them
-                if (sourcesTargetReachableFromNextTurn(mp.target, id, state.pr0, state) <= 0) {
+                if (sourcesTargetReachableFromNextTurn(mp.target, myID, theirPair, state) <= 0) {
                     // and they can't steal it back
                     int[] move = intListFromMovePair(mp);
                     goodMoves.add(move);
@@ -460,10 +474,10 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         //     int[] move = intListFromMovePair(mp);
 
         //     // if making this move won't lead to a steal
-        //     if (!moveSet.contains(move) && sourcesTargetReachableFromNextTurn(mp.target, id, state.pr0, state) <= 0) {
+        //     if (!moveSet.contains(move) && sourcesTargetReachableFromNextTurn(mp.target, myID, theirPair, state) <= 0) {
         //         // and if either the source or target is currently vulnerable to a steal
-        //         if ((mp.src.owner == id && sourcesTargetReachableFromWithValue(mp.src, mp.src.value, id, state.pr0, state) > 0) ||
-        //             (mp.target.owner == id && sourcesTargetReachableFromWithValue(mp.target, mp.target.value, id, state.pr0, state) > 0)) {
+        //         if ((mp.src.owner == myID && sourcesTargetReachableFromWithValue(mp.src, mp.src.value, myID, theirPair, state) > 0) ||
+        //             (mp.target.owner == myID && sourcesTargetReachableFromWithValue(mp.target, mp.target.value, myID, theirPair, state) > 0)) {
         //                 goodMoves.add(move);
         //                 moveSet.add(move);
         //         }
@@ -472,11 +486,12 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 
         // then add random legal moves to fill
         Collections.shuffle(legalMoves, new Random());
+
         for (int i = 0; i < legalMoves.size() && goodMoves.size() <= moveListSize; i++) {
             movePair mp = legalMoves.get(i);
             int[] move = intListFromMovePair(mp);
             // we don't want to add stealable moves
-            if (!moveSet.contains(move) && sourcesTargetReachableFromNextTurn(mp.target, id, state.pr0, state) <= 0) {
+            if (!moveSet.contains(move) && sourcesTargetReachableFromNextTurn(mp.target, myID, theirPair, state) <= 0) {
                 goodMoves.add(move);
                 moveSet.add(move);
             }
@@ -491,14 +506,14 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         return goodMoves;
     }
 
-    private List<int[]> interestingMovesFromInts(List<int[]> legalMoves, OffsetState state) {
+    private List<int[]> interestingMovesFromInts(List<int[]> legalMoves, OffsetState state, boolean mine) {
         ArrayList<movePair> legalMovePairs = new ArrayList<movePair>(legalMoves.size());
 
         for (int[] move : legalMoves) {
             legalMovePairs.add(movePairFromIntList(move, state.grid));
         }
 
-        return interestingMovesFromPairs(legalMovePairs, state);
+        return interestingMovesFromPairs(legalMovePairs, state, mine);
     }
 
     private int sourcesTargetReachableFromNextTurn(Point target, int ownerID, Pair pair, OffsetState state) {
