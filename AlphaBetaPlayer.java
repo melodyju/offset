@@ -478,20 +478,20 @@ public class AlphaBetaPlayer extends offset.sim.Player {
             moveListSize = GOOD_MOVE_CONTROL_COUNT;
         }
 
-        // TODO: add moves that prevent a steal from us
-        // for (movePair mp : legalMoves) {
-        //     int[] move = intListFromMovePair(mp);
+        // add moves that prevent a steal from us
+        for (movePair mp : legalMoves) {
+            int[] move = intListFromMovePair(mp);
 
-        //     // if making this move won't lead to a steal
-        //     if (!moveSet.contains(move) && sourcesTargetReachableFromNextTurn(mp.target, myID, theirPair, state) <= 0) {
-        //         // and if either the source or target is currently vulnerable to a steal
-        //         if ((mp.src.owner == myID && sourcesTargetReachableFromWithValue(mp.src, mp.src.value, myID, theirPair, state) > 0) ||
-        //             (mp.target.owner == myID && sourcesTargetReachableFromWithValue(mp.target, mp.target.value, myID, theirPair, state) > 0)) {
-        //                 goodMoves.add(move);
-        //                 moveSet.add(move);
-        //         }
-        //     }
-        // }
+            // if making this move won't lead to a steal
+            if (!moveSet.contains(move) && sourcesTargetReachableFromNextTurn(mp.target, myID, theirPair, state) <= 0) {
+                // and if either the source or target is currently vulnerable to a steal
+                if ((mp.src.owner == myID && sourcesTargetReachableFromWithValue(mp.src, mp.src.value, myID, theirPair, state) > 0) ||
+                    (mp.target.owner == myID && sourcesTargetReachableFromWithValue(mp.target, mp.target.value, myID, theirPair, state) > 0)) {
+                        goodMoves.add(move);
+                        moveSet.add(move);
+                }
+            }
+        }
 
         // then add random legal moves to fill
         Collections.shuffle(legalMoves, new Random());
