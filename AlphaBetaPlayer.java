@@ -165,10 +165,19 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         long startTime = System.nanoTime();
         int i;
 
+				int possibleMoves = root.getData().validMoves(true).size();
+
+				int depth = MAX_DEPTH;
+				if (possibleMoves <= 25) {
+					depth = MAX_DEPTH + 1;
+				} else {
+					depth = MAX_DEPTH;
+				}
+
         HashMap<OffsetState, List<int[]>> moveOrdering = new HashMap<OffsetState, List<int[]>>();
 
         /* until we reach the max depth or run out of time, do an alpha beta search to depth i */
-        for (i=1; i<MAX_DEPTH; i++) {
+        for (i = 1; i < depth; i++) {
             ActionValue possibleAv = alphaBetaMaxVal(root, Double.NEGATIVE_INFINITY, Double.POSITIVE_INFINITY, i, startTime, moveOrdering);
 
             if (possibleAv != null)  { /* completed search successfully */
