@@ -112,9 +112,6 @@ public class AlphaBetaPlayer extends offset.sim.Player {
             s -= Math.pow(mp.target.value, BIG_SQUARE_POWER) * THEIR_MOVE_WEIGHT; // their moves are worth more
         }
 
-        //s += (state.gameScore(id) / move_ratio);
-        //s -= (state.gameScore(otherID()) / move_ratio);
-
         List<Point> myPoints = state.pointsOwned(id);
         for (Point p : myPoints) {
             s += Math.pow(p.value, BIG_SQUARE_POWER);
@@ -124,16 +121,6 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         for (Point p : theirPoints) {
             s -= Math.pow(p.value, BIG_SQUARE_POWER);
         }
-
-        // TODO: devalue board based on moves the opponent can steal
-
-        // TODO: do better in the early game
-
-        // TODO: do better in the late game
-
-        // TODO: definitely pick a steal if it is really valuable (this means having the score take into account the move)
-
-        // TODO: also focus on moves where the source or target is currently vulnerable to a steal, but could be saved with a move
 
         stateEvaluations.put(state.grid, s);
         return s;
