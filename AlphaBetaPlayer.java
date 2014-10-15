@@ -20,10 +20,10 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     private static final long ABORT_TIME = 300000000;       /* buffer time to abort any search from to ensure we don't go over time limit */
     private static final int MAX_DEPTH = 2;                /* max depth we would want to reach for alpha beta search */
 
-    public static final int MOVES_TO_CHECK = 700;
+    public static final int MOVES_TO_CHECK = 748;
     public static final int GOOD_MOVE_LIMIT = 2;
-    public static final int GOOD_MOVE_CONTROL_COUNT = 700;
-    public static final double THEIR_MOVE_WEIGHT = 2;
+    public static final int GOOD_MOVE_CONTROL_COUNT = 748;
+    public static final double THEIR_MOVE_WEIGHT = 2.39;
     public static final double BIG_SQUARE_POWER = 1.25;
 
     private static final movePair FORFEIT_MOVE = new movePair(false, null, null);     /* return this when the agent can't move */
@@ -88,28 +88,12 @@ public class AlphaBetaPlayer extends offset.sim.Player {
         ArrayList<movePair> myValidMoves = state.validMovesAsMovePairs(true);
         ArrayList<movePair> theirValidMoves = state.validMovesAsMovePairs(false);
 
-        int current_moves;
-
-        if (hundred_percent_moves == -1) {
-            hundred_percent_moves = 0;
-            for (movePair mp : myValidMoves) {
-                s += Math.pow(mp.target.value, BIG_SQUARE_POWER);
-                hundred_percent_moves++;
-            }
-            current_moves = hundred_percent_moves;
+        for (movePair mp : myValidMoves) {
+            s += Math.pow(mp.target.value, BIG_SQUARE_POWER);
         }
-        else {
-            current_moves = 0;
-            for (movePair mp : myValidMoves) {
-                s += Math.pow(mp.target.value, BIG_SQUARE_POWER);
-                current_moves++;
-            }
-        }
-
-        double move_ratio = (current_moves + (hundred_percent_moves - current_moves)/2) / hundred_percent_moves + 0.01;
 
         for (movePair mp : theirValidMoves) {
-            s -= Math.pow(mp.target.value, BIG_SQUARE_POWER) * THEIR_MOVE_WEIGHT; // their moves are worth more
+            s -= Math.pow(mp.target.value, BIG_SQUARE_POWER) * THEIR_MOVE_WEIGHT;
         }
 
         List<Point> myPoints = state.pointsOwned(id);
@@ -154,15 +138,15 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 
 				int possibleMoves = root.getData().validMoves(true).size();
 
-        int depth = MAX_DEPTH;
-        if (possibleMoves <= 4) {
-          depth = MAX_DEPTH + 2;
-        }
-        else if (possibleMoves <= 25) {
-        	depth = MAX_DEPTH + 1;
-        } else {
-        	depth = MAX_DEPTH;
-        }
+      int depth = MAX_DEPTH;
+      if (possibleMoves <= 4) {
+        depth = MAX_DEPTH + 2;
+      }
+      else if (possibleMoves <= 25) {
+      	depth = MAX_DEPTH + 1;
+      } else {
+      	depth = MAX_DEPTH;
+      }
 
         HashMap<OffsetState, List<int[]>> moveOrdering = new HashMap<OffsetState, List<int[]>>();
 
