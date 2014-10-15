@@ -23,7 +23,7 @@ public class AlphaBetaPlayer extends offset.sim.Player {
     public static final int MOVES_TO_CHECK = 748;
     public static final int GOOD_MOVE_LIMIT = 2;
     public static final int GOOD_MOVE_CONTROL_COUNT = 748;
-    public static final double THEIR_MOVE_WEIGHT = 2.39;
+    public static final double THEIR_MOVE_WEIGHT = 2.1;
     public static final double BIG_SQUARE_POWER = 1.25;
 
     private static final movePair FORFEIT_MOVE = new movePair(false, null, null);     /* return this when the agent can't move */
