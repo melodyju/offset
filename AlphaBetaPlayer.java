@@ -154,12 +154,15 @@ public class AlphaBetaPlayer extends offset.sim.Player {
 
 				int possibleMoves = root.getData().validMoves(true).size();
 
-				int depth = MAX_DEPTH;
-				if (possibleMoves <= 25) {
-					depth = MAX_DEPTH + 1;
-				} else {
-					depth = MAX_DEPTH;
-				}
+        int depth = MAX_DEPTH;
+        if (possibleMoves <= 4) {
+          depth = MAX_DEPTH + 2;
+        }
+        else if (possibleMoves <= 25) {
+        	depth = MAX_DEPTH + 1;
+        } else {
+        	depth = MAX_DEPTH;
+        }
 
         HashMap<OffsetState, List<int[]>> moveOrdering = new HashMap<OffsetState, List<int[]>>();
 
